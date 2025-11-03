@@ -1,0 +1,47 @@
+[package]
+name = "copy-tradin"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "solana-copy-trader"
+path = "src/main.rs"
+
+[dependencies]
+# Solana
+solana-client = "1.18"
+solana-sdk = "1.18"
+solana-transaction-status = "1.18"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.21"  # WebSocket
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+
+# Config
+config = "0.13"
+toml = "0.8"
+
+# Anchor (for parsing Anchor programs)
+anchor-lang = "0.29"
+
+# Base58/Base64
+bs58 = "0.5"
+base64 = "0.21"
+
+# URL handling
+url = "2.5"
