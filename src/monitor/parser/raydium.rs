@@ -5,8 +5,8 @@ use solana_sdk::signature::Signature;
 use solana_transaction_status::UiInstruction;
 use tracing::{debug, warn};
 
-/// Parse Orca Whirlpool swap transactions
-pub fn parse_orca_swap(
+/// Parse Raydium AMM swap transactions
+pub fn parse_raydium_swap(
     _instructions: &[UiInstruction],
     _account_keys: &[Pubkey],
     _signature: Signature,
@@ -14,13 +14,13 @@ pub fn parse_orca_swap(
     _priority_fee: u64,
     _trader: Pubkey,
 ) -> MonitorResult<Option<TradeSignal>> {
-    debug!("Parsing Orca swap");
-    
-    // TODO: Implement Orca Whirlpool-specific parsing
-    // Orca Whirlpool has unique concentrated liquidity model
-    // Requires different parsing approach
-    
-    warn!("Orca parsing not yet implemented");
+    debug!("Parsing Raydium swap");
+
+    // TODO: Implement Raydium-specific parsing
+    // Raydium AMM uses different instruction layout than Jupiter
+    // Account positions and data format are different
+
+    warn!("Raydium parsing not yet implemented");
     Ok(None)
 }
 
@@ -29,7 +29,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_orca_parser_exists() {
+    fn test_raydium_parser_exists() {
         assert!(true);
     }
 }

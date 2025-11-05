@@ -1,0 +1,19 @@
+[monitor]
+# Example: An active Jupiter trader (public address)
+target_wallet = "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
+
+# Or try this one:
+# target_wallet = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+
+rpc_endpoints = [
+    "https://api.mainnet-beta.solana.com",
+    "https://solana-api.projectserum.com"
+]
+
+websocket_endpoint = "wss://api.mainnet-beta.solana.com"
+connection_timeout_secs = 30
+max_reconnect_attempts = 5
+use_confirmed_commitment = true
+
+[logging]
+level = "info"
