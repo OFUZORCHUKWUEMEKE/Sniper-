@@ -6,14 +6,12 @@ use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcTransactionConfig;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::signature::Signature;
-use solana_transaction_status::{
-    EncodedConfirmedTransactionWithStatusMeta, UiTransactionEncoding,
-};
+use solana_transaction_status::{EncodedConfirmedTransactionWithStatusMeta, UiTransactionEncoding};
 use std::collections::HashSet;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use tracing::{debug, error, info, warn};
 
 const DEDUP_CACHE_SIZE: usize = 10_000;
@@ -70,13 +68,13 @@ impl TransactionListener {
                 Ok(_) => {}
                 Err(MonitorError::ConnectionFailed(_)) | Err(MonitorError::WebSocketError(_)) => {
                     warn!("Connection lost, attempting to reconnect...");
-                    
+
                     // Try to reconnect
                     if let Err(e) = self.ws_manager.reconnect().await {
                         error!("Failed to reconnect: {}", e);
                         return Err(e);
                     }
-                    
+
                     // Resubscribe after reconnection
                     self.ws_manager.subscribe_to_logs(&target_address).await?;
                 }
@@ -115,9 +113,8 @@ impl TransactionListener {
         if let Some(sig_str) = value.get("signature").and_then(|s| s.as_str()) {
             debug!("Detected transaction: {}", sig_str);
 
-            let signature = Signature::from_str(sig_str).map_err(|e| {
-                MonitorError::ParseError(format!("Invalid signature: {}", e))
-            })?;
+            let signature = Signature::from_str(sig_str)
+                .map_err(|e| MonitorError::ParseError(format!("Invalid signature: {}", e)))?;
 
             // Check for duplicates
             if self.is_duplicate(&signature) {
@@ -151,7 +148,7 @@ impl TransactionListener {
                 .take(to_remove)
                 .copied()
                 .collect();
-            
+
             for sig in signatures_to_remove {
                 self.seen_signatures.remove(&sig);
             }
@@ -172,36 +169,39 @@ impl TransactionListener {
         let mut retries = 0;
 
         loop {
-            match self
-                .rpc_client
-                .get_transaction_with_config(
-                    &signature,
-                    solana_client::rpc_config::RpcTransactionConfig {
-                        encoding: Some(UiTransactionEncoding::JsonParsed),
-                        commitment: Some(self.rpc_client.commitment()),
-                        max_supported_transaction_version: Some(0), // Support v0 transactions
-                    },
-                )
-            {
+            match self.rpc_client.get_transaction_with_config(
+                &signature,
+                solana_client::rpc_config::RpcTransactionConfig {
+                    encoding: Some(UiTransactionEncoding::JsonParsed),
+                    commitment: Some(self.rpc_client.commitment()),
+                    max_supported_transaction_version: Some(0), // Support v0 transactions
+                },
+            ) {
                 Ok(transaction) => {
                     info!("Successfully fetched transaction: {}", signature);
-                    
+
                     // Send to parser via channel
                     if let Err(e) = self.tx_sender.send(transaction) {
                         error!("Failed to send transaction to parser: {}", e);
                         return Err(MonitorError::ChannelError);
                     }
-                    
+
                     return Ok(());
                 }
                 Err(e) => {
                     retries += 1;
                     if retries >= max_retries {
-                        error!("Failed to fetch transaction after {} retries: {}", max_retries, e);
+                        error!(
+                            "Failed to fetch transaction after {} retries: {}",
+                            max_retries, e
+                        );
                         return Err(MonitorError::RpcError(e));
                     }
-                    
-                    warn!("Retry {}/{} - Error fetching transaction: {}", retries, max_retries, e);
+
+                    warn!(
+                        "Retry {}/{} - Error fetching transaction: {}",
+                        retries, max_retries, e
+                    );
                     sleep(Duration::from_millis(1000 * retries)).await;
                 }
             }
@@ -231,7 +231,7 @@ mod tests {
         let mut listener = TransactionListener::new(config, tx);
 
         let sig = Signature::default();
-        
+
         assert!(!listener.is_duplicate(&sig));
         assert!(listener.is_duplicate(&sig));
     }
