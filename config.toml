@@ -3,7 +3,7 @@
 target_wallet = "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
 
 # Or try this one:
-# target_wallet = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+# target_wallet = "78N177fzNJpp8pG49xDv1efYcTMSzo9tPTKEA9mAVkh2"
 
 rpc_endpoints = [
     "https://api.mainnet-beta.solana.com",

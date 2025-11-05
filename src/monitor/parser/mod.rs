@@ -3,7 +3,8 @@ use crate::types::{DexType, TradeSignal, program_ids};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
 use solana_transaction_status::{
-    EncodedConfirmedTransactionWithStatusMeta, UiInstruction, UiMessage, UiParsedInstruction, UiParsedMessage, UiTransaction
+    EncodedConfirmedTransactionWithStatusMeta, UiInstruction, UiMessage, UiParsedInstruction,
+    UiParsedMessage, UiTransaction,
 };
 use std::str::FromStr;
 use tracing::{debug, error, info, warn};
@@ -73,6 +74,11 @@ impl TransactionParser {
                 }
             })
             .collect();
+        info!("📊 Transaction Details:");
+        info!("   • Signature: {}", signature);
+        info!("   • Instructions: {}", message.instructions.len());
+        info!("   • Accounts: {}", account_keys.len());
+        info!("   • Timestamp: {}", timestamp);
 
         // Check if target wallet is involved
         if !account_keys.contains(&self.target_wallet) {
@@ -84,7 +90,25 @@ impl TransactionParser {
         let dex_type = self.identify_dex(&message.instructions, &account_keys)?;
 
         if dex_type == DexType::Unknown {
-            debug!("Unknown DEX type, skipping");
+            // Log what program IDs we found
+            let program_ids: Vec<String> = message
+                .instructions
+                .iter()
+                .filter_map(|inst| match inst {
+                    UiInstruction::Parsed(UiParsedInstruction::Parsed(parsed)) => {
+                        Some(format!("{} ({})", parsed.program, parsed.program_id))
+                    }
+                    UiInstruction::Compiled(compiled) => account_keys
+                        .get(compiled.program_id_index as usize)
+                        .map(|pk| pk.to_string()),
+                    _ => None,
+                })
+                .collect();
+
+            warn!("❓ Unknown DEX - Program IDs found:");
+            for (i, pid) in program_ids.iter().enumerate() {
+                warn!("   {}. {}", i + 1, pid);
+            }
             return Ok(None);
         }
 
