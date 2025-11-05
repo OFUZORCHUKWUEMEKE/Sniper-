@@ -77,6 +77,7 @@ impl TransactionParser {
         info!("📊 Transaction Details:");
         info!("   • Signature: {}", signature);
         info!("   • Instructions: {}", message.instructions.len());
+        info!("   • Solscan: https://solscan.io/tx/{}", signature);
         info!("   • Accounts: {}", account_keys.len());
         info!("   • Timestamp: {}", timestamp);
 
@@ -147,7 +148,31 @@ impl TransactionParser {
         };
 
         if let Some(ref signal) = trade_signal {
-            info!("Successfully parsed trade: {}", signal.description());
+            info!("🎯 ═══════════════════════════════════════════════");
+            info!("🎯 SUCCESSFULLY PARSED TRADE SIGNAL!");
+            info!("🎯 ═══════════════════════════════════════════════");
+            info!("   DEX: {}", signal.dex);
+            info!("   From: {}", signal.source_mint);
+            info!("   To: {}", signal.destination_mint);
+            info!("   Amount In: {}", signal.amount_in);
+            info!("   Min Amount Out: {}", signal.minimum_amount_out);
+            info!("   Slippage: {:.2}%", signal.slippage_bps as f64 / 100.0);
+            info!("   Priority Fee: {} lamports", signal.priority_fee_lamports);
+            info!("");
+            info!("🔗 Links:");
+            info!("   • Transaction: {}", signal.solscan_url());
+            info!("   • Trader: {}", signal.trader_solscan_url());
+            info!(
+                "   • Source Token: https://solscan.io/token/{}",
+                signal.source_mint
+            );
+            info!(
+                "   • Dest Token: https://solscan.io/token/{}",
+                signal.destination_mint
+            );
+            info!("🎯 ═══════════════════════════════════════════════");
+        } else {
+            warn!("⚠️  DEX identified as {} but parsing failed", dex_type);
         }
 
         Ok(trade_signal)

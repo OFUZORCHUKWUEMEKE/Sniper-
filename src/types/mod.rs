@@ -54,6 +54,16 @@ impl TradeSignal {
             self.slippage_bps as f64 / 100.0
         )
     }
+
+    /// Get Solscan URL for this transaction
+    pub fn solscan_url(&self) -> String {
+        format!("https://solscan.io/tx/{}", self.signature)
+    }
+
+    /// Get Solscan URL for the trader's wallet
+    pub fn trader_solscan_url(&self) -> String {
+        format!("https://solscan.io/account/{}", self.trader)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
