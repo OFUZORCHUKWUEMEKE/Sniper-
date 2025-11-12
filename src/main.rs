@@ -1,18 +1,16 @@
-use copy_tradin::{TransactionListener, TransactionParser, load_config};
+use copy_tradin::{load_config, TransactionListener, UniversalParser};
 use std::env;
 use tokio::sync::mpsc;
 use tracing::{error, info};
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging
-
+    // Initialize logging - simple version
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    info!("Starting Solana Copy Trading Bot - Monitor (Task 1)");
+    info!("Starting Solana Copy Trading Bot - Universal DEX Detection");
 
     // Load configuration
     let config_path = env::args()
@@ -25,21 +23,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             error!("Failed to load config: {}", e);
             info!("Creating default config file...");
             copy_tradin::create_default_config(&config_path)?;
-            info!(
-                "Please edit {} with your target wallet address",
-                config_path
-            );
+            info!("Please edit {} with your target wallet address", config_path);
             return Ok(());
         }
     };
 
     info!("Monitoring wallet: {}", config.target_wallet);
+    info!("🌟 Using UNIVERSAL detection - works with ALL DEXs!");
 
     // Create channel for transactions
     let (tx_sender, mut tx_receiver) = mpsc::unbounded_channel();
 
-    // Create parser
-    let parser = TransactionParser::new(config.target_wallet);
+    // Create universal parser
+    let parser = UniversalParser::new(config.target_wallet);
 
     // Create and start listener
     let mut listener = TransactionListener::new(config.clone(), tx_sender);
@@ -55,29 +51,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn parser task
     let parser_handle = tokio::spawn(async move {
         info!("Parser ready, waiting for transactions...");
-
+        
         while let Some(transaction) = tx_receiver.recv().await {
             match parser.parse(transaction) {
-                Ok(Some(trade_signal)) => {
+                Ok(Some(swap_signal)) => {
                     info!("═══════════════════════════════════════════════");
-                    info!("🎯 TRADE DETECTED!");
+                    info!("🎯 SWAP DETECTED (Universal Detection)!");
                     info!("═══════════════════════════════════════════════");
-                    info!("Signature: {}", trade_signal.signature);
-                    info!("DEX: {}", trade_signal.dex);
-                    info!("Source Token: {}", trade_signal.source_mint);
-                    info!("Dest Token: {}", trade_signal.destination_mint);
-                    info!("Amount In: {}", trade_signal.amount_in);
-                    info!("Min Amount Out: {}", trade_signal.minimum_amount_out);
-                    info!("Slippage: {:.2}%", trade_signal.slippage_bps as f64 / 100.0);
-                    info!(
-                        "Priority Fee: {} lamports",
-                        trade_signal.priority_fee_lamports
-                    );
-                    info!("Timestamp: {}", trade_signal.timestamp);
+                    info!("Signature: {}", swap_signal.signature);
+                    info!("Type: {}", swap_signal.swap_type);
+                    info!("Input Token: {}", swap_signal.input_mint);
+                    info!("Input Amount: {}", swap_signal.input_amount);
+                    info!("Output Token: {}", swap_signal.output_mint);
+                    info!("Output Amount: {}", swap_signal.output_amount);
+                    if let Some(ref dex) = swap_signal.likely_dex {
+                        info!("Likely DEX: {} (detected automatically)", dex);
+                    }
+                    info!("Timestamp: {}", swap_signal.timestamp);
+                    info!("");
+                    info!("🔗 View on Solscan:");
+                    info!("   Transaction: {}", swap_signal.solscan_url());
+                    info!("   Trader: {}", swap_signal.trader_solscan_url());
                     info!("═══════════════════════════════════════════════");
+                    
+                    // TODO: Pass to decision engine
+                    // TODO: Execute trade via Jupiter
                 }
                 Ok(None) => {
-                    info!("Transaction processed but no trade signal extracted");
+                    info!("Transaction processed but no swap detected");
                 }
                 Err(e) => {
                     error!("Failed to parse transaction: {}", e);

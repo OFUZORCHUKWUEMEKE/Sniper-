@@ -136,7 +136,6 @@ mod tests {
             max_reconnect_attempts: None,
             use_confirmed_commitment: None,
         };
-
         // Should fail with empty RPC endpoints
         assert!(raw.rpc_endpoints.is_empty());
     }
