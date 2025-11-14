@@ -32,18 +32,19 @@ impl BalanceAnalyzer {
 
         // Handle OptionSerializer - it may be None, Some, or Skip
         let pre_balances = match &meta.pre_token_balances {
-            solana_transaction_status::option_serializer::OptionSerializer::Some(balances) => balances,
-            solana_transaction_status::option_serializer::OptionSerializer::None | 
-            solana_transaction_status::option_serializer::OptionSerializer::Skip => {
+            solana_transaction_status::option_serializer::OptionSerializer::Some(balances) => {
+                balances
+            }
+            solana_transaction_status::option_serializer::OptionSerializer::None
+            | solana_transaction_status::option_serializer::OptionSerializer::Skip => {
                 return Ok(balances); // No token balances
             }
         };
 
         for balance_info in pre_balances {
             // Parse mint
-            let mint = Pubkey::from_str(&balance_info.mint).map_err(|e| {
-                MonitorError::ParseError(format!("Invalid mint address: {}", e))
-            })?;
+            let mint = Pubkey::from_str(&balance_info.mint)
+                .map_err(|e| MonitorError::ParseError(format!("Invalid mint address: {}", e)))?;
 
             // Parse owner - handle OptionSerializer
             let owner = match &balance_info.owner {
@@ -63,9 +64,7 @@ impl BalanceAnalyzer {
                 .ui_token_amount
                 .amount
                 .parse::<u64>()
-                .map_err(|e| {
-                    MonitorError::ParseError(format!("Invalid amount: {}", e))
-                })?;
+                .map_err(|e| MonitorError::ParseError(format!("Invalid amount: {}", e)))?;
 
             let decimals = balance_info.ui_token_amount.decimals;
 
@@ -100,18 +99,19 @@ impl BalanceAnalyzer {
 
         // Handle OptionSerializer - it may be None, Some, or Skip
         let post_balances = match &meta.post_token_balances {
-            solana_transaction_status::option_serializer::OptionSerializer::Some(balances) => balances,
-            solana_transaction_status::option_serializer::OptionSerializer::None | 
-            solana_transaction_status::option_serializer::OptionSerializer::Skip => {
+            solana_transaction_status::option_serializer::OptionSerializer::Some(balances) => {
+                balances
+            }
+            solana_transaction_status::option_serializer::OptionSerializer::None
+            | solana_transaction_status::option_serializer::OptionSerializer::Skip => {
                 return Ok(balances); // No token balances
             }
         };
 
         for balance_info in post_balances {
             // Parse mint
-            let mint = Pubkey::from_str(&balance_info.mint).map_err(|e| {
-                MonitorError::ParseError(format!("Invalid mint address: {}", e))
-            })?;
+            let mint = Pubkey::from_str(&balance_info.mint)
+                .map_err(|e| MonitorError::ParseError(format!("Invalid mint address: {}", e)))?;
 
             // Parse owner - handle OptionSerializer
             let owner = match &balance_info.owner {
@@ -131,9 +131,7 @@ impl BalanceAnalyzer {
                 .ui_token_amount
                 .amount
                 .parse::<u64>()
-                .map_err(|e| {
-                    MonitorError::ParseError(format!("Invalid amount: {}", e))
-                })?;
+                .map_err(|e| MonitorError::ParseError(format!("Invalid amount: {}", e)))?;
 
             let decimals = balance_info.ui_token_amount.decimals;
 
@@ -192,7 +190,10 @@ impl BalanceAnalyzer {
             // We skip it because SOL changes are usually just for fees
             let wsol_mint = "So11111111111111111111111111111111111111112";
             if mint.to_string() == wsol_mint {
-                debug!("Skipping SOL/WSOL balance change (likely fees): {} lamports", delta);
+                debug!(
+                    "Skipping SOL/WSOL balance change (likely fees): {} lamports",
+                    delta
+                );
                 continue;
             }
 

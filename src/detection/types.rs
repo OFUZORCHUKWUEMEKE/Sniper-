@@ -1,3 +1,4 @@
+use crate::decision;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
 
@@ -95,6 +96,34 @@ impl UniversalSwapSignal {
             self.input_mint,
             self.output_amount,
             self.output_mint
+        )
+    }
+
+    pub fn direction(&self) -> crate::decision::TradeDirection {
+        decision::detect_direction(&self.input_mint, &self.output_mint)
+    }
+
+    /// Check if this is a buy signal we should copy
+    pub fn is_buy(&self) -> bool {
+        matches!(
+            self.direction(),
+            crate::decision::TradeDirection::Buy { .. }
+        )
+    }
+
+    /// Check if this is a sell signal we should skip
+    pub fn is_sell(&self) -> bool {
+        matches!(
+            self.direction(),
+            decision::TradeDirection::Sell { .. }
+        )
+    }
+
+    /// Check if this is a token-to-token swap
+    pub fn is_swap(&self) -> bool {
+        matches!(
+            self.direction(),
+            decision::TradeDirection::Swap { .. }
         )
     }
 }

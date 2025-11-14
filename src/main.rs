@@ -1,18 +1,16 @@
-use copy_tradin::{load_config, TransactionListener, UniversalParser};
+use copy_tradin::{TradeDirection, TransactionListener, UniversalParser, load_config}; // ADD TradeDirection
 use std::env;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging - simple version
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
 
     info!("Starting Solana Copy Trading Bot - Universal DEX Detection");
 
-    // Load configuration
     let config_path = env::args()
         .nth(1)
         .unwrap_or_else(|| "config.toml".to_string());
@@ -23,7 +21,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             error!("Failed to load config: {}", e);
             info!("Creating default config file...");
             copy_tradin::create_default_config(&config_path)?;
-            info!("Please edit {} with your target wallet address", config_path);
+            info!(
+                "Please edit {} with your target wallet address",
+                config_path
+            );
             return Ok(());
         }
     };
@@ -31,16 +32,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Monitoring wallet: {}", config.target_wallet);
     info!("🌟 Using UNIVERSAL detection - works with ALL DEXs!");
 
-    // Create channel for transactions
     let (tx_sender, mut tx_receiver) = mpsc::unbounded_channel();
-
-    // Create universal parser
     let parser = UniversalParser::new(config.target_wallet);
-
-    // Create and start listener
     let mut listener = TransactionListener::new(config.clone(), tx_sender);
 
-    // Spawn listener task
     let target_wallet = config.target_wallet;
     let listener_handle = tokio::spawn(async move {
         if let Err(e) = listener.start(target_wallet).await {
@@ -48,10 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Spawn parser task
     let parser_handle = tokio::spawn(async move {
         info!("Parser ready, waiting for transactions...");
-        
+
         while let Some(transaction) = tx_receiver.recv().await {
             match parser.parse(transaction) {
                 Ok(Some(swap_signal)) => {
@@ -68,12 +62,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         info!("Likely DEX: {} (detected automatically)", dex);
                     }
                     info!("Timestamp: {}", swap_signal.timestamp);
+
+                    // ✅ ADD DIRECTION ANALYSIS HERE
+                    info!("");
+                    match swap_signal.direction() {
+                        TradeDirection::Buy { token, payment } => {
+                            info!("🎯 DIRECTION: BUY (Entry Signal)");
+                            info!("   Token:   {}", token);
+                            info!("   Payment: {}", payment);
+                            info!("✅ COPYABLE SIGNAL");
+                        }
+                        TradeDirection::Sell { token, receives } => {
+                            info!("📉 DIRECTION: SELL (Exit Signal)");
+                            info!("   Selling:  {} (token being sold)", token);
+                            info!("   For:      {} (receiving)", receives);
+                            info!("⏭️  SKIP - Exit trade");
+                            continue; // Skip to next transaction
+                        }
+                        TradeDirection::Swap {
+                            from_token,
+                            to_token,
+                        } => {
+                            info!("🔄 DIRECTION: TOKEN SWAP");
+                            info!("   From: {}", from_token);
+                            info!("   To:   {}", to_token);
+                        }
+                    }
+
                     info!("");
                     info!("🔗 View on Solscan:");
                     info!("   Transaction: {}", swap_signal.solscan_url());
                     info!("   Trader: {}", swap_signal.trader_solscan_url());
                     info!("═══════════════════════════════════════════════");
-                    
+
                     // TODO: Pass to decision engine
                     // TODO: Execute trade via Jupiter
                 }
@@ -89,7 +110,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Bot is running. Press Ctrl+C to stop.");
 
-    // Wait for either task to complete (or Ctrl+C)
     tokio::select! {
         _ = listener_handle => {
             info!("Listener task ended");
